@@ -67,36 +67,37 @@ def add_fields_I_want(df):
         for i_list,i in enumerate(range(start, indices_with_nav_keys[grid_no])):
             if grid_no == 0:
                 # if the data stored a value smaller than t = 0, correct that
-                if round(df.at[i, 't_step_press_curr_run'],3) < 0:
+                if df.at[i, 't_step_press_curr_run'] < 0:
                     curr_key_times = np.insert(curr_key_times, 0, 0)
                     curr_list_of_keys = np.insert(curr_list_of_keys, 0, 0)
                     df.at[i, 't_step_press_curr_run'] = 0
             else:
                 # for some sad reason, there are some (rare) glitches in the behavioural tables.
                 # one glitch is that the first time of t_step_press_curr_run is shorter than 0
-                if round(df.at[indices_with_nav_keys[grid_no-1]+1, 't_step_press_curr_run'],3) <= 0:
+                if df.at[indices_with_nav_keys[grid_no-1]+1, 't_step_press_curr_run'] <= 0:
                     curr_key_times = np.insert(curr_key_times, 0, 0)
                     curr_list_of_keys = np.insert(curr_list_of_keys, 0, 0)
                     df.at[indices_with_nav_keys[grid_no-1]+1, 't_step_press_curr_run'] = 0
                 # another glitch is that the first time of t_step_press_curr_run is even later than the last recorded press of this task
-                if round(df.at[indices_with_nav_keys[grid_no-1]+1, 't_step_press_curr_run'],3) > round(df.at[indices_with_nav_keys[grid_no]-1, 't_step_press_curr_run'],3):
+                if df.at[indices_with_nav_keys[grid_no-1]+1, 't_step_press_curr_run'] > df.at[indices_with_nav_keys[grid_no]-1, 't_step_press_curr_run']:
                     df.at[indices_with_nav_keys[grid_no-1]+1, 't_step_press_curr_run'] = curr_key_times[i_list]
                 # another glitch is that there is a negative time somewhere in the middle of the task
-                if round(df.at[i, 't_step_press_curr_run'],3) < 0:
+                if df.at[i, 't_step_press_curr_run'] < 0:
                     df.at[i, 't_step_press_curr_run'] = curr_key_times[i_list]
 
             # then, test for what I am actually interested in:
             # which of the key presses was the recorded one?
-            if round(df.at[i, 't_step_press_curr_run'],3) == round(curr_key_times[i_list + overall_error_counter],3):
+            if np.isclose(df.at[i, 't_step_press_curr_run'], curr_key_times[i_list + overall_error_counter]):
                 df.at[i, 'curr_key'] = curr_list_of_keys[i_list + overall_error_counter]
                 df.at[i, 'curr_key_time'] = curr_key_times[i_list + overall_error_counter]
             else:
                 wrong_keys = [str(curr_list_of_keys[i_list + overall_error_counter])]
+                # Note: is there a reason for rounding this?
                 wrong_times = [str(round(curr_key_times[i_list + overall_error_counter],4))]
                 count_error_keys += 1
                 overall_error_counter += 1
 
-                while round(df.at[i, 't_step_press_curr_run'],3) != round(curr_key_times[i_list + overall_error_counter],3) :
+                while not np.isclose(df.at[i, 't_step_press_curr_run'], curr_key_times[i_list + overall_error_counter]):
                     wrong_keys.append(str(curr_list_of_keys[i_list + overall_error_counter]))
                     wrong_times.append(str(round(curr_key_times[i_list + overall_error_counter], 4)))
                     count_error_keys += 1
@@ -130,7 +131,7 @@ def add_fields_I_want(df):
             if np.isnan(row['rew_loc_x']):
                 df.at[index, 'time_bin_type'] = df.at[index, 'config_type'] + '_' + df.at[index, 'state'] + '_path'
             else:
-                df.at[index, 'time_bin_type'] =  df.at[index, 'config_type'] + '_' + df.at[index, 'state'] + '_reward'
+                df.at[index, 'time_bin_type'] = df.at[index, 'config_type'] + '_' + df.at[index, 'state'] + '_reward'
 
     return df
 
