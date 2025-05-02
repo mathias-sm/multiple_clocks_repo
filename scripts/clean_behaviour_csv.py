@@ -87,35 +87,25 @@ def add_fields_I_want(df):
 
             # then, test for what I am actually interested in:
             # which of the key presses was the recorded one?
-            if np.isclose(df.at[i, 't_step_press_curr_run'], curr_key_times[i_list + overall_error_counter]):
-                df.at[i, 'curr_key'] = curr_list_of_keys[i_list + overall_error_counter]
-                df.at[i, 'curr_key_time'] = curr_key_times[i_list + overall_error_counter]
-            else:
-                wrong_keys = [str(curr_list_of_keys[i_list + overall_error_counter])]
-                # Note: is there a reason for rounding this?
-                wrong_times = [str(round(curr_key_times[i_list + overall_error_counter],4))]
+            # A comment here summarizing the changes would be helpful. Here's
+            # Mathias' attempt:
+            # Compile the list of incorrect keys by looping in the list until
+            # we reach the correct one, then store everything in the right new
+            # columns.
+            wrong_keys = []
+            wrong_times = []
+            while not np.isclose(df.at[i, 't_step_press_curr_run'], curr_key_times[i_list + overall_error_counter]):
+                wrong_keys.append(str(curr_list_of_keys[i_list + overall_error_counter]))
+                wrong_times.append(str(round(curr_key_times[i_list + overall_error_counter], 4)))
                 count_error_keys += 1
-                overall_error_counter += 1
+                overall_error_counter +=1
 
-                while not np.isclose(df.at[i, 't_step_press_curr_run'], curr_key_times[i_list + overall_error_counter]):
-                    wrong_keys.append(str(curr_list_of_keys[i_list + overall_error_counter]))
-                    wrong_times.append(str(round(curr_key_times[i_list + overall_error_counter], 4)))
-                    count_error_keys += 1
-                    overall_error_counter +=1
-
-                # if these columns don't exist yet, there will be an error if I try to fill with
-                # several items. instead, first create with 0, then fill.
-                df.at[i, 'non-exe_key_time'] = 0
-                df.at[i, 'non-exe_key'] = 0
-
-                # once back to a correct key, fill in the one that you missed previously
-                df.at[i, 'non-exe_key'] = wrong_keys
-                df.at[i, 'non-exe_key_time'] = wrong_times
-
-                df.at[i, 'curr_key'] = curr_list_of_keys[i_list + overall_error_counter]
-                df.at[i, 'curr_key_time'] = curr_key_times[i_list + overall_error_counter]
-                df.at[i, 'non-exe_key_counter'] = count_error_keys
-                count_error_keys = 0
+            df.at[i, 'curr_key'] = curr_list_of_keys[i_list + overall_error_counter]
+            df.at[i, 'curr_key_time'] = curr_key_times[i_list + overall_error_counter]
+            df.at[i, 'non-exe_key_time'] = str(wrong_times)
+            df.at[i, 'non-exe_key'] = str(wrong_keys)
+            df.at[i, 'non-exe_key_counter'] = count_error_keys
+            count_error_keys = 0
 
 
     # Fix coordinates:
@@ -128,10 +118,8 @@ def add_fields_I_want(df):
     for index, row in df.iterrows():
         # and prepare the regressors: config type, state and reward/walking specific.
         if not pd.isna(row['state']):
-            if np.isnan(row['rew_loc_x']):
-                df.at[index, 'time_bin_type'] = df.at[index, 'config_type'] + '_' + df.at[index, 'state'] + '_path'
-            else:
-                df.at[index, 'time_bin_type'] = df.at[index, 'config_type'] + '_' + df.at[index, 'state'] + '_reward'
+            bin_type = '_path' if np.isnan(row['rew_loc_x']) else '_reward'
+            df.at[index, 'time_bin_type'] = df.at[index, 'config_type'] + '_' + df.at[index, 'state'] + bin_type
 
     return df
 
