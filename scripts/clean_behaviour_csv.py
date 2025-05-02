@@ -28,20 +28,17 @@ def transform_coord_y(y):
 def delete_unnecessary_fields(og_df):
     # the first row is empty so delete to get indices right
     og_df = og_df.iloc[1:].reset_index(drop=True)
-    df_clean = og_df.copy()
 
     # drop all unused columns for better readability.
-    df_clean = og_df.drop(columns=['rep_runs.thisRepN', 'rep_runs.thisTrialN', 'rep_runs.thisN', 'rep_runs.thisIndex',
-                                   't_step_end_global', 'sand_box.started', 'sand_box.stopped', 'foot.started', 'foot.stopped',
-                                   'reward.started', 'reward.stopped', 'TR_key.keys', 'TR_key.rt', 'TR_key.started',
-                                   'nav_key_task.stopped', 'break_key.keys', 'break_key.started', 'break_key.stopped',
-                                   'progressbar_background.started', 'progressbar_background.stopped', 'progress_bar.started',
-                                   'progress_bar.stopped', 'reward_progress.started', 'reward_progress.stopped',
-                                   'plus_coin_txt.started', 'plus_coin_txt.stopped', 'reward_A_feedback.started',
-                                   'reward_A_feedback.stopped', 'TR_key.stopped', 'participant', 'date'])
-                                   # 'Unnamed: 55'])
-
-    return df_clean
+    return og_df.drop(columns=['rep_runs.thisRepN', 'rep_runs.thisTrialN', 'rep_runs.thisN', 'rep_runs.thisIndex',
+                               't_step_end_global', 'sand_box.started', 'sand_box.stopped', 'foot.started', 'foot.stopped',
+                               'reward.started', 'reward.stopped', 'TR_key.keys', 'TR_key.rt', 'TR_key.started',
+                               'nav_key_task.stopped', 'break_key.keys', 'break_key.started', 'break_key.stopped',
+                               'progressbar_background.started', 'progressbar_background.stopped', 'progress_bar.started',
+                               'progress_bar.stopped', 'reward_progress.started', 'reward_progress.stopped',
+                               'plus_coin_txt.started', 'plus_coin_txt.stopped', 'reward_A_feedback.started',
+                               'reward_A_feedback.stopped', 'TR_key.stopped', 'participant', 'date'])
+    # 'Unnamed: 55']) # @Svenja: Why not remove this one as well?
 
 
 def add_fields_I_want(df):
@@ -67,8 +64,7 @@ def add_fields_I_want(df):
         overall_error_counter = 0
 
         start = 0 if grid_no == 0 else indices_with_nav_keys[grid_no-1]+1
-        end = indices_with_nav_keys[grid_no]
-        for i_list,i in enumerate(range(start, end)):
+        for i_list,i in enumerate(range(start, indices_with_nav_keys[grid_no])):
             if grid_no == 0:
                 # if the data stored a value smaller than t = 0, correct that
                 if round(df.at[i, 't_step_press_curr_run'],3) < 0:
