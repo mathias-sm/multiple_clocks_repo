@@ -14,7 +14,6 @@ import pandas as pd
 import numpy as np
 import os
 import ast
-
 import fire
 
 
@@ -40,6 +39,7 @@ def delete_unnecessary_fields(og_df):
                                    'progress_bar.stopped', 'reward_progress.started', 'reward_progress.stopped',
                                    'plus_coin_txt.started', 'plus_coin_txt.stopped', 'reward_A_feedback.started',
                                    'reward_A_feedback.stopped', 'TR_key.stopped', 'participant', 'date'])
+                                   # 'Unnamed: 55'])
 
     return df_clean
 
@@ -66,49 +66,16 @@ def add_fields_I_want(df):
         count_error_keys = 0
         overall_error_counter = 0
 
-        if grid_no == 0:
-            # import pdb; pdb.set_trace()
-            for i in range(0, indices_with_nav_keys[grid_no]):
+        start = 0 if grid_no == 0 else indices_with_nav_keys[grid_no-1]+1
+        end = indices_with_nav_keys[grid_no]
+        for i_list,i in enumerate(range(start, end)):
+            if grid_no == 0:
                 # if the data stored a value smaller than t = 0, correct that
                 if round(df.at[i, 't_step_press_curr_run'],3) < 0:
                     curr_key_times = np.insert(curr_key_times, 0, 0)
                     curr_list_of_keys = np.insert(curr_list_of_keys, 0, 0)
                     df.at[i, 't_step_press_curr_run'] = 0
-                # next, track which button was pressed. It is possible to press more buttons than
-                # actually are executed (only the button that was pressed last is executed)
-                # thus, check if the button press is aligned with the time the subject moved
-                if round(df.at[i, 't_step_press_curr_run'],3) == round(curr_key_times[i + overall_error_counter],3):
-                    count_error_keys = 0
-                    df.at[i, 'curr_key'] = curr_list_of_keys[i]
-                    df.at[i, 'curr_key_time'] = curr_key_times[i]
-                else:
-                    wrong_keys = [str(curr_list_of_keys[i + overall_error_counter])]
-                    wrong_times = [str(round(curr_key_times[i + overall_error_counter],4))]
-                    count_error_keys += 1
-                    overall_error_counter += 1
-
-                    while round(df.at[i, 't_step_press_curr_run'],3) != round(curr_key_times[i + overall_error_counter],3) :
-                        wrong_keys.append(str(curr_list_of_keys[i + overall_error_counter]))
-                        wrong_times.append(str(round(curr_key_times[i + overall_error_counter], 4)))
-                        count_error_keys += 1
-                        overall_error_counter +=1
-
-                    # if these columns don't exist yet, there will be an error if I try to fill with
-                    # several items. instead, first create with 0, then fill.
-                    df.at[i, 'non-exe_key_time'] = 0
-                    df.at[i, 'non-exe_key'] = 0
-
-                    # once back to a correct key, fill in the one that you missed previously
-                    df.at[i, 'non-exe_key'] = wrong_keys
-                    df.at[i, 'non-exe_key_time'] = wrong_times
-
-                    df.at[i, 'curr_key'] = curr_list_of_keys[i + overall_error_counter]
-                    df.at[i, 'curr_key_time'] = curr_key_times[i + overall_error_counter]
-                    df.at[i, 'non-exe_key_counter'] = count_error_keys
-                    count_error_keys = 0
-
-        elif grid_no > 0:
-            for i_list,i in enumerate(range(indices_with_nav_keys[grid_no-1]+1, indices_with_nav_keys[grid_no])):
+            else:
                 # for some sad reason, there are some (rare) glitches in the behavioural tables.
                 # one glitch is that the first time of t_step_press_curr_run is shorter than 0
                 if round(df.at[indices_with_nav_keys[grid_no-1]+1, 't_step_press_curr_run'],3) <= 0:
@@ -122,36 +89,37 @@ def add_fields_I_want(df):
                 if round(df.at[i, 't_step_press_curr_run'],3) < 0:
                     df.at[i, 't_step_press_curr_run'] = curr_key_times[i_list]
 
-                # then, test for what I am actually interested in:
-                    # which of the key presses was the recorded one?
-                if round(df.at[i, 't_step_press_curr_run'],3) == round(curr_key_times[i_list + overall_error_counter],3):
-                    df.at[i, 'curr_key'] = curr_list_of_keys[i_list + overall_error_counter]
-                    df.at[i, 'curr_key_time'] = curr_key_times[i_list + overall_error_counter]
-                else:
-                    wrong_keys = [str(curr_list_of_keys[i_list + overall_error_counter])]
-                    wrong_times = [str(round(curr_key_times[i_list + overall_error_counter],4))]
+            # then, test for what I am actually interested in:
+            # which of the key presses was the recorded one?
+            if round(df.at[i, 't_step_press_curr_run'],3) == round(curr_key_times[i_list + overall_error_counter],3):
+                df.at[i, 'curr_key'] = curr_list_of_keys[i_list + overall_error_counter]
+                df.at[i, 'curr_key_time'] = curr_key_times[i_list + overall_error_counter]
+            else:
+                wrong_keys = [str(curr_list_of_keys[i_list + overall_error_counter])]
+                wrong_times = [str(round(curr_key_times[i_list + overall_error_counter],4))]
+                count_error_keys += 1
+                overall_error_counter += 1
+
+                while round(df.at[i, 't_step_press_curr_run'],3) != round(curr_key_times[i_list + overall_error_counter],3) :
+                    wrong_keys.append(str(curr_list_of_keys[i_list + overall_error_counter]))
+                    wrong_times.append(str(round(curr_key_times[i_list + overall_error_counter], 4)))
                     count_error_keys += 1
-                    overall_error_counter += 1
+                    overall_error_counter +=1
 
-                    while round(df.at[i, 't_step_press_curr_run'],3) != round(curr_key_times[i_list + overall_error_counter],3) :
-                        wrong_keys.append(str(curr_list_of_keys[i_list + overall_error_counter]))
-                        wrong_times.append(str(round(curr_key_times[i_list + overall_error_counter], 4)))
-                        count_error_keys += 1
-                        overall_error_counter +=1
+                # if these columns don't exist yet, there will be an error if I try to fill with
+                # several items. instead, first create with 0, then fill.
+                df.at[i, 'non-exe_key_time'] = 0
+                df.at[i, 'non-exe_key'] = 0
 
-                    # if these columns don't exist yet, there will be an error if I try to fill with
-                    # several items. instead, first create with 0, then fill.
-                    df.at[i, 'non-exe_key_time'] = 0
-                    df.at[i, 'non-exe_key'] = 0
+                # once back to a correct key, fill in the one that you missed previously
+                df.at[i, 'non-exe_key'] = wrong_keys
+                df.at[i, 'non-exe_key_time'] = wrong_times
 
-                    # once back to a correct key, fill in the one that you missed previously
-                    df.at[i, 'non-exe_key'] = wrong_keys
-                    df.at[i, 'non-exe_key_time'] = wrong_times
+                df.at[i, 'curr_key'] = curr_list_of_keys[i_list + overall_error_counter]
+                df.at[i, 'curr_key_time'] = curr_key_times[i_list + overall_error_counter]
+                df.at[i, 'non-exe_key_counter'] = count_error_keys
+                count_error_keys = 0
 
-                    df.at[i, 'curr_key'] = curr_list_of_keys[i_list + overall_error_counter]
-                    df.at[i, 'curr_key_time'] = curr_key_times[i_list + overall_error_counter]
-                    df.at[i, 'non-exe_key_counter'] = count_error_keys
-                    count_error_keys = 0
 
     # Fix coordinates:
     df["curr_loc_y_coord"] = df["curr_loc_y"].apply(transform_coord_y)
