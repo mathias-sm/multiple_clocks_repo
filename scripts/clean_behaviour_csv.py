@@ -19,11 +19,11 @@ import fire
 
 
 def transform_coord_x(x):
-    map_transform_coord_x = {-0.21: 0, 0: 1, .21: 2}
+    map_transform_coord_x = {-0.21: 0.0, 0: 1.0, .21: 2.0}
     return map_transform_coord_x[x]
 
 def transform_coord_y(y):
-    map_transform_coord_y = {-0.29: 0, 0: 1, .29: 2}
+    map_transform_coord_y = {-0.29: 0.0, 0: 1.0, .29: 2.0}
     return map_transform_coord_y[y]
 
 def delete_unnecessary_fields(og_df):
@@ -154,10 +154,10 @@ def add_fields_I_want(df):
                     count_error_keys = 0
 
     # Fix coordinates:
-    df["curr_loc_x_coord"] = df["curr_loc_x"].apply(transform_coord_x)
     df["curr_loc_y_coord"] = df["curr_loc_y"].apply(transform_coord_y)
-    df["curr_rew_x_coord"] = df["curr_rew_x"].apply(transform_coord_x)
+    df["curr_loc_x_coord"] = df["curr_loc_x"].apply(transform_coord_x)
     df["curr_rew_y_coord"] = df["curr_rew_y"].apply(transform_coord_y)
+    df["curr_rew_x_coord"] = df["curr_rew_x"].apply(transform_coord_x)
 
     # add columns whith field numbers
     for index, row in df.iterrows():
@@ -182,7 +182,7 @@ def clean_behaviour_for_sub(sub="02", behavior_path="/Users/xpsy1114/Documents/p
         # third, add fields I am going to make use of later
         df_completed = add_fields_I_want(df_cleaned)
         # fourth, store the new csv file for later use.
-        df_completed.to_csv(f"{behavior_path}/{sub}/beh/{sub}_beh_clean_fmri_pt{task_half}.csv", index=False)
+        df_completed.to_csv(f"{behavior_path}/{sub}/beh/{sub}_beh_clean_fmri_pt{task_half}_msm.csv")
 
 if __name__ == "__main__":
     fire.Fire(clean_behaviour_for_sub)
