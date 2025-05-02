@@ -131,10 +131,10 @@ def add_fields_I_want(df):
     for index, row in df.iterrows():
         # and prepare the regressors: config type, state and reward/walking specific.
         if not pd.isna(row['state']):
-            if not np.isnan(row['rew_loc_x']):
-                df.at[index, 'time_bin_type'] =  df.at[index, 'config_type'] + '_' + df.at[index, 'state'] + '_reward'
-            elif np.isnan(row['rew_loc_x']):
+            if np.isnan(row['rew_loc_x']):
                 df.at[index, 'time_bin_type'] = df.at[index, 'config_type'] + '_' + df.at[index, 'state'] + '_path'
+            else:
+                df.at[index, 'time_bin_type'] =  df.at[index, 'config_type'] + '_' + df.at[index, 'state'] + '_reward'
 
     return df
 
