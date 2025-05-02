@@ -44,7 +44,7 @@ def delete_unnecessary_fields(og_df):
 def add_fields_I_want(df):
     # fill gaps in a few fields
     for field in ["round_no", "task_config", "repeat"]:
-        df[field] = df[field].fillna(method="ffill")
+        df[field] = df[field].ffill()
 
     # so that I cann differenatiate task config and direction
     df['config_type'] = df['task_config'] + '_' + df['type']
