@@ -5,17 +5,26 @@ Created on Fri Apr 25 16:56:05 2025
 
 @author: Svenja Küchenhoff
 
-take the relevant entries of the behavioural table and only store those that 
+take the relevant entries of the behavioural table and only store those that
 are actually required in the remaining analysis.
 
 """
 
-import mc
 import pandas as pd
 import numpy as np
 import os
 import ast
 
+import fire
+
+
+def transform_coord_x(x):
+    map_transform_coord_x = {-0.21: 0, 0: 1, .21: 2}
+    return map_transform_coord_x[x]
+
+def transform_coord_y(y):
+    map_transform_coord_y = {-0.29: 0, 0: 1, .29: 2}
+    return map_transform_coord_y[y]
 
 def delete_unnecessary_fields(og_df):
     # the first row is empty so delete to get indices right
@@ -26,10 +35,10 @@ def delete_unnecessary_fields(og_df):
     df_clean = og_df.drop(columns=['rep_runs.thisRepN', 'rep_runs.thisTrialN', 'rep_runs.thisN', 'rep_runs.thisIndex',
                                    't_step_end_global', 'sand_box.started', 'sand_box.stopped', 'foot.started', 'foot.stopped',
                                    'reward.started', 'reward.stopped', 'TR_key.keys', 'TR_key.rt', 'TR_key.started',
-                                   'nav_key_task.stopped', 'break_key.keys', 'break_key.started', 'break_key.stopped', 
-                                   'progressbar_background.started', 'progressbar_background.stopped', 'progress_bar.started', 
-                                   'progress_bar.stopped', 'reward_progress.started', 'reward_progress.stopped', 
-                                   'plus_coin_txt.started', 'plus_coin_txt.stopped', 'reward_A_feedback.started', 
+                                   'nav_key_task.stopped', 'break_key.keys', 'break_key.started', 'break_key.stopped',
+                                   'progressbar_background.started', 'progressbar_background.stopped', 'progress_bar.started',
+                                   'progress_bar.stopped', 'reward_progress.started', 'reward_progress.stopped',
+                                   'plus_coin_txt.started', 'plus_coin_txt.stopped', 'reward_A_feedback.started',
                                    'reward_A_feedback.stopped', 'TR_key.stopped', 'participant', 'date'])
 
     return df_clean
@@ -64,7 +73,7 @@ def add_fields_I_want(df):
                 if round(df.at[i, 't_step_press_curr_run'],3) < 0:
                     curr_key_times = np.insert(curr_key_times, 0, 0)
                     curr_list_of_keys = np.insert(curr_list_of_keys, 0, 0)
-                    df.at[i, 't_step_press_curr_run'] = 0  
+                    df.at[i, 't_step_press_curr_run'] = 0
                 # next, track which button was pressed. It is possible to press more buttons than
                 # actually are executed (only the button that was pressed last is executed)
                 # thus, check if the button press is aligned with the time the subject moved
@@ -96,10 +105,10 @@ def add_fields_I_want(df):
                     df.at[i, 'curr_key'] = curr_list_of_keys[i + overall_error_counter]
                     df.at[i, 'curr_key_time'] = curr_key_times[i + overall_error_counter]
                     df.at[i, 'non-exe_key_counter'] = count_error_keys
-                    count_error_keys = 0        
+                    count_error_keys = 0
 
-        elif grid_no > 0:               
-            for i_list,i in enumerate(range(indices_with_nav_keys[grid_no-1]+1, indices_with_nav_keys[grid_no])): 
+        elif grid_no > 0:
+            for i_list,i in enumerate(range(indices_with_nav_keys[grid_no-1]+1, indices_with_nav_keys[grid_no])):
                 # for some sad reason, there are some (rare) glitches in the behavioural tables.
                 # one glitch is that the first time of t_step_press_curr_run is shorter than 0
                 if round(df.at[indices_with_nav_keys[grid_no-1]+1, 't_step_press_curr_run'],3) <= 0:
@@ -144,13 +153,14 @@ def add_fields_I_want(df):
                     df.at[i, 'non-exe_key_counter'] = count_error_keys
                     count_error_keys = 0
 
-    # add columns whith field numbers 
+    # Fix coordinates:
+    df["curr_loc_x_coord"] = df["curr_loc_x"].apply(transform_coord_x)
+    df["curr_loc_y_coord"] = df["curr_loc_y"].apply(transform_coord_y)
+    df["curr_rew_x_coord"] = df["curr_rew_x"].apply(transform_coord_x)
+    df["curr_rew_y_coord"] = df["curr_rew_y"].apply(transform_coord_y)
+
+    # add columns whith field numbers
     for index, row in df.iterrows():
-        # current locations
-        df.at[index, 'curr_loc_y_coord'] = mc.analyse.analyse_MRI_behav.transform_coord(df.at[index,'curr_loc_y'], is_y=True, is_x = False)
-        df.at[index, 'curr_loc_x_coord'] = mc.analyse.analyse_MRI_behav.transform_coord(df.at[index,'curr_loc_x'], is_x=True, is_y = False)
-        df.at[index, 'curr_rew_y_coord'] = mc.analyse.analyse_MRI_behav.transform_coord(df.at[index,'curr_rew_y'], is_y=True, is_x = False)
-        df.at[index, 'curr_rew_x_coord'] = mc.analyse.analyse_MRI_behav.transform_coord(df.at[index,'curr_rew_x'], is_x=True, is_y = False)
         # and prepare the regressors: config type, state and reward/walking specific.
         if not pd.isna(row['state']):
             if not np.isnan(row['rew_loc_x']):
@@ -163,7 +173,7 @@ def add_fields_I_want(df):
 
 def clean_behaviour_for_sub(sub="02", behavior_path="/Users/xpsy1114/Documents/projects/multiple_clocks/data/pilot/"):
     # Turn sub number into bids-like "sub-04" format
-    sub = f"sub-{int(subject_idx):02}"
+    sub = f"sub-{int(sub):02}"
     for task_half in [1,2]:
         # First load the raw behavior file
         raw_df = pd.read_csv(f"{behavior_path}/{sub}/beh/{sub}_fmri_pt{task_half}.csv")
@@ -172,7 +182,7 @@ def clean_behaviour_for_sub(sub="02", behavior_path="/Users/xpsy1114/Documents/p
         # third, add fields I am going to make use of later
         df_completed = add_fields_I_want(df_cleaned)
         # fourth, store the new csv file for later use.
-        df_completed.to_csv(f"{behavior_path}/{sub}/beh/{sub}_beh_clean_fmri_pt{th}.csv", index=False)
+        df_completed.to_csv(f"{behavior_path}/{sub}/beh/{sub}_beh_clean_fmri_pt{task_half}.csv", index=False)
 
 if __name__ == "__main__":
     fire.Fire(clean_behaviour_for_sub)
